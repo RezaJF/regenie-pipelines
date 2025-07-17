@@ -95,10 +95,10 @@ task step2 {
             then
                 N_cases_females=$(awk -v pheno=$p 'FNR==NR { females[$1]; next } FNR==1{ for(i=1;i<=NF;i++) {h[$i]=i} }; NR>1 && $h[pheno]==1 && $1 in females {print $1}' females <(zcat ${cov_pheno}) | wc -l)
                 N_cases_males=$(awk -v pheno=$p 'FNR==NR { males[$1]; next } FNR==1{ for(i=1;i<=NF;i++) {h[$i]=i} }; NR>1 && $h[pheno]==1 && $1 in males {print $1}' males <(zcat ${cov_pheno}) | wc -l)
-            else 
+            else
                 N_cases_females=$(awk -v pheno=$p 'FNR==NR { females[$1]; next } FNR==1{ for(i=1;i<=NF;i++) {h[$i]=i} }; NR>1 && $h[pheno]!="NA" && $1 in females {print $1}' females <(zcat ${cov_pheno}) | wc -l)
                 N_cases_males=$(awk -v pheno=$p 'FNR==NR { males[$1]; next } FNR==1{ for(i=1;i<=NF;i++) {h[$i]=i} }; NR>1 && $h[pheno]!="NA" && $1 in males {print $1}' males <(zcat ${cov_pheno}) | wc -l)
-            fi 
+            fi
 
             echo "Female cases: "$N_cases_females
             echo "Male cases: "$N_cases_males
@@ -128,7 +128,7 @@ task step2 {
               ## NOTE
               ## NOTE: Echoing annoyingly the expected header here so that in gather the header can be taken from the first shard.
               ## NOTE This must match whats written from python below
-            
+
                 if [[ "${is_binary}" == "true" ]];
                 then
                      echo -n "CHROM GENPOS ID ALLELE0 ALLELE1 A1FREQ A1FREQ_CASES A1FREQ_CONTROLS INFO N TEST BETA SE CHISQ LOG10P"\
@@ -136,14 +136,14 @@ task step2 {
                         " females_ID females_A1FREQ_CASES females_A1FREQ_CONTROLS females_N females_BETA females_SE females_LOG10P"\
                         " diff_beta p_diff" | bgzip > ${prefix}"."$p".sex_spec.gz"
                     continue
-                else 
+                else
 
                      echo -n "CHROM GENPOS ID ALLELE0 ALLELE1 A1FREQ INFO N TEST BETA SE CHISQ LOG10P"\
                         " EXTRA males_ID males_N males_BETA males_SE males_LOG10P"\
                         " females_ID females_N females_BETA females_SE females_LOG10P"\
                         " diff_beta p_diff" | bgzip > ${prefix}"."$p".sex_spec.gz"
                     continue
-                fi 
+                fi
             fi
 
             for s in males females;
@@ -207,15 +207,15 @@ basic = pd.read_csv( gzip.open(base), sep=" ")
 
 cols = list(basic.columns)
 
-binarycols = ["A1FREQ_CONTROLS","A1FREQ_CASES"] 
+binarycols = ["A1FREQ_CONTROLS","A1FREQ_CASES"]
 
 malestat = pd.read_csv( gzip.open( male ), sep=" " )
 femalestat = pd.read_csv( gzip.open(female), sep=" ")
 
 if  all ( [ c in cols for c in binarycols ]):
-    ## add case control afs... 
+    ## add case control afs...
     sex_cols.extend(binarycols)
-    
+
 malestat = malestat[sex_cols]
 femalestat = femalestat[sex_cols]
 
@@ -394,7 +394,7 @@ task summary{
         pheno = os.path.splitext(os.path.basename(fname))[0]
         output_summary_name = pheno + "_summary.txt"
         output_coding_name = pheno + "_coding.txt"
-        FGAnnotation = NamedTuple('FGAnnotation',[('gene',str),('consequence',str),('rsid',str),('EXOME_enrichment_nfsee',str),('GENOME_enrichment_nfee',str)])
+        FGAnnotation = NamedTuple('FGAnnotation',[('gene',str),('consequence',str),('rsid',str),('EXOME_enrichment_nfe',str),('GENOME_enrichment_nfe',str)])
         def get_header(reader,file):
             with reader(file, "rt") as f:
                 l = f.readline()
@@ -408,7 +408,7 @@ task summary{
             return FGAnnotation("","","","","")
 
         #required columns
-        fg_req_cols=["#variant","gene_most_severe","most_severe","rsid","EXOME_enrichment_nfsee","GENOME_enrichment_nfee"]
+        fg_req_cols=["#variant","gene_most_severe","most_severe","rsid","EXOME_enrichment_nfe","GENOME_enrichment_nfe"]
         #open finngen annotation tabix
         fg_tabix = pysam.TabixFile(finngen_annotation_file,parser=None)
         #get fg header column positions
@@ -417,7 +417,7 @@ task summary{
         #check for fg column existence
         if not all([a in fg_header for a in fg_req_cols]):
             raise Exception("Not all columns present in FinnGen annotation! Aborting...")
-        var_idx, gene_idx, cons_idx, rsid_idx, exome_enr_idx, genome_enr_idx = (fg_idx["#variant"],fg_idx["gene_most_severe"],fg_idx["most_severe"],fg_idx["rsid"],fg_idx["EXOME_enrichment_nfsee"],fg_idx["GENOME_enrichment_nfee"])
+        var_idx, gene_idx, cons_idx, rsid_idx, exome_enr_idx, genome_enr_idx = (fg_idx["#variant"],fg_idx["gene_most_severe"],fg_idx["most_severe"],fg_idx["rsid"],fg_idx["EXOME_enrichment_nfe"],fg_idx["GENOME_enrichment_nfe"])
 
         with gzip.open(fname, "rt") as file:
             #open output file
@@ -435,7 +435,7 @@ task summary{
                 )
 
                 #add rsid, gene name, consequence, enrichments, phenotype
-                header.extend(["rsid","gene_most_severe","most_severe","EXOME_enrichment_nfsee","GENOME_enrichment_nfee","phenotype"])
+                header.extend(["rsid","gene_most_severe","most_severe","EXOME_enrichment_nfe","GENOME_enrichment_nfe","phenotype"])
                 summary_outfile.write("\t".join(header)+"\n")
                 coding_outfile.write("\t".join(header)+"\n")
 
@@ -455,8 +455,8 @@ task summary{
                             fg_a.rsid,
                             fg_a.gene,
                             fg_a.consequence,
-                            fg_a.EXOME_enrichment_nfsee,
-                            fg_a.GENOME_enrichment_nfee,
+                            fg_a.EXOME_enrichment_nfe,
+                            fg_a.GENOME_enrichment_nfe,
                             pheno,
                         ])
                         #gather row
