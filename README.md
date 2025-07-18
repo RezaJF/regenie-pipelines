@@ -62,14 +62,61 @@ This in an example scenario creating new phenotypes with R7 data and running tho
 8. Use the given workflow id to look at the timing diagram or to get metadata
 `http://0.0.0.0:5000/api/workflows/v1/WORKFLOW_ID/timing`
 `http://0.0.0.0:5000/api/workflows/v1/WORKFLOW_ID/metadata`
-9. Logs and results go under
-`gs://fg-cromwell_fresh/regenie/WORKFLOW_ID`
-Summary stats and tabix indexes:
-`gs://fg-cromwell_fresh/regenie/WORKFLOW_ID/call-sub_step2/**/call-gather/**/*.gz*`
-Plots:
-`gs://fg-cromwell_fresh/regenie/WORKFLOW_ID/call-sub_step2/**/*.png`
-Summary files with p < 1e-6 variants including annotation:
-`gs://fg-cromwell_fresh/regenie/WORKFLOW_ID/call-sub_step2/**/call-summary/**/*_summary.txt`
+9. **Output Directory Structure**
+All outputs from the pipeline are stored in a Google Cloud Storage bucket with the following base path: `gs://fg-cromwell_fresh/regenie/WORKFLOW_ID/`
+
+Here `WORKFLOW_ID` is the unique identifier for your Cromwell run. Below is a breakdown of the key output directories and their contents:
+
+```
+gs://fg-cromwell_fresh/regenie/WORKFLOW_ID/
+├── call-sub_step1/
+│   └── shard-0/
+│       └── call-step1/
+│           └── execution/
+│               ├── *.loco.gz       # Null model results (LOCO predictions)
+│               └── ...
+├── call-sub_step2/
+│   ├── shard-0/
+│   │   ├── call-gather/
+│   │   │   └── execution/
+│   │   │       ├── regenie/
+│   │   │       │   ├── *.regenie.gz
+│   │   │       │   └── *.regenie.sex_diff.gz
+│   │   │       ├── munged/
+│   │   │       │   ├── *.gz          # PheWeb-formatted results
+│   │   │       │   └── *.gz.tbi
+│   │   │       ├── *.png           # QQ and Manhattan plots
+│   │   │       └── ...
+│   │   └── call-summary/
+│   │       └── execution/
+│   │           ├── *_summary.txt   # Annotated summary files
+│   │           └── *_coding.txt    # Annotated coding variants
+│   └── shard-1/
+│       └── ...
+└── ...
+```
+
+**Key Result Locations:**
+
+*   **PheWeb-Formatted Results**:
+    *   **Path**: `call-sub_step2/**/call-gather/execution/munged/*.gz`
+    *   **Description**: These are the main summary statistics files, formatted for compatibility with PheWeb. They are accompanied by Tabix index files (`.tbi`).
+
+*   **Annotated Summary Files**:
+    *   **Path**: `call-sub_step2/**/call-summary/execution/*_summary.txt`
+    *   **Description**: These files contain variants with p-values below the significance threshold (e.g., p < 1e-6), annotated with FinnGen and gnomAD information.
+
+*   **QQ and Manhattan Plots**:
+    *   **Path**: `call-sub_step2/**/call-gather/execution/*.png`
+    *   **Description**: Visualizations of the GWAS results, including QQ plots to assess p-value distribution and Manhattan plots to identify significant associations.
+
+*   **Raw REGENIE Results**:
+    *   **Path**: `call-sub_step2/**/call-gather/execution/regenie/*.regenie.gz`
+    *   **Description**: The direct output from the REGENIE tool.
+
+*   **Null Model (Step 1) Results**:
+    *   **Path**: `call-sub_step1/**/call-step1/execution/*.loco.gz`
+    *   **Description**: The Leave-One-Chromosome-Out (LOCO) predictions generated during Step 1, which are crucial for the association testing in Step 2.
 
 ## Detailed Pipeline Architecture and Flow
 
